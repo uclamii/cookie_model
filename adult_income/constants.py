@@ -2,6 +2,8 @@
 ############################# Path Variables ###################################
 ################################################################################
 
+import os
+
 model_output = "model_output"  # model output path
 
 ################################################################################
@@ -37,6 +39,11 @@ percent_miss = "percentage_missing"  # new col for percentage missing in rows
 miss_indicator = "missing_indicator"  # indicator for percentage missing (0,1)
 
 capital_gain = "capital-gain"
+
+## DataBricks
+databricks_username = "/" + "/".join(os.getcwd().split("/")[2:-1]) + "/"
+
+
 ################################################################################
 
 # The below artificat name is used for preprocessing alone
