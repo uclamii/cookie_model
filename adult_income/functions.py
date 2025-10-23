@@ -37,6 +37,7 @@ from tqdm import tqdm
 from adult_income.constants import (
     mlflow_artifacts_data,
     mlflow_models_data,
+    databricks_username,
 )
 
 
@@ -1276,27 +1277,40 @@ class PlotMetrics:
 ################################################################################
 
 
-######################### MlFLow Helper Functions ##############################
-def set_or_create_experiment(experiment_name, verbose=True):
+###################### MLFlow Helper Functions #################################
+def set_or_create_experiment(experiment_name, verbose=True, databricks=False):
     """
     Set up or create an MLflow experiment.
 
     Args:
-        experiment_name: Name of the experiment.
+        experiment_name (str): Name of the experiment.
+        verbose (bool): Whether to print progress messages.
+        databricks (bool): If True, prepend the Databricks username path.
 
     Returns:
-        Experiment ID.
+        str: Experiment ID.
     """
+    # Build full experiment path conditionally
+    if databricks:
+        full_experiment_name = databricks_username + experiment_name
+    else:
+        full_experiment_name = experiment_name
 
-    existing_experiment = mlflow.get_experiment_by_name(experiment_name)
+    if verbose:
+        print(f"Using experiment path: {full_experiment_name}")
+
+    existing_experiment = mlflow.get_experiment_by_name(full_experiment_name)
+
     if existing_experiment is None:
-        print(f"Experiment '{experiment_name}' does not exist. Creating a new one.")
-        experiment_id = mlflow.create_experiment(experiment_name)
+        if verbose:
+            print(f"Experiment '{experiment_name}' does not exist. Creating a new one.")
+        experiment_id = mlflow.create_experiment(full_experiment_name)
     else:
         experiment_id = existing_experiment.experiment_id
         if verbose:
             print(f"Using Existing Experiment_ID: {experiment_id}")
-    mlflow.set_experiment(experiment_name)
+
+    mlflow.set_experiment(full_experiment_name)
     return experiment_id
 
 
@@ -1317,7 +1331,12 @@ def start_new_run(run_name):
     return run_id
 
 
-def get_run_id_by_name(experiment_name, run_name, verbose=True):
+def get_run_id_by_name(
+    experiment_name,
+    run_name,
+    verbose=True,
+    databricks=False,
+):
     """
     Query MLflow to find the run_id for the given run_name in the experiment.
     If no run exists, create a new one.
@@ -1333,7 +1352,12 @@ def get_run_id_by_name(experiment_name, run_name, verbose=True):
     client = MlflowClient()
 
     # Get the experiment
-    experiment = mlflow.get_experiment_by_name(experiment_name)
+    if databricks:
+        experiment = mlflow.get_experiment_by_name(
+            databricks_username + experiment_name
+        )
+    else:
+        experiment = mlflow.get_experiment_by_name(experiment_name)
     if not experiment:
         raise ValueError(f"Experiment {experiment_name} not found.")
 
@@ -1371,6 +1395,7 @@ def mlflow_dumpArtifact(
     obj,
     get_existing_id=True,
     artifact_run_id=None,
+    databricks=False,
     artifacts_data_path=mlflow_artifacts_data,
 ):
     """
@@ -1396,16 +1421,20 @@ def mlflow_dumpArtifact(
     else:
         mlflow_dumpArtifact.artifacts_run_id = artifact_run_id
     abs_mlflow_data = os.path.abspath(artifacts_data_path)
-    mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
+
+    if databricks:
+        mlflow.set_tracking_uri("databricks")
+        mlflow.set_registry_uri("databricks-uc")
+    else:
+        mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
 
     # Set or create experiment
-    experiment_id = set_or_create_experiment(experiment_name)
+    experiment_id = set_or_create_experiment(experiment_name, databricks=databricks)
     print(f"Experiment_ID for artifact {obj_name}: {experiment_id}")
 
     if get_existing_id:
         mlflow_dumpArtifact.artifacts_run_id = get_run_id_by_name(
-            experiment_name,
-            run_name,
+            experiment_name, run_name, databricks=databricks
         )
 
     # Get or create a single run_id for all artifacts
@@ -1436,6 +1465,7 @@ def mlflow_loadArtifact(
     run_name,  # Use run_name to query the single artifacts run_id
     obj_name,
     verbose=True,
+    databricks=False,
     artifacts_data_path=mlflow_artifacts_data,
 ):
     """
@@ -1443,7 +1473,7 @@ def mlflow_loadArtifact(
 
     Args:
         experiment_name: Name of the MLflow experiment.
-        run_name: Name of the run within the experiment.
+        run_name: Name of the run within the experiment.or
         obj_name: Name of the artifact (without .pkl extension).
 
     Returns:
@@ -1453,12 +1483,22 @@ def mlflow_loadArtifact(
         ValueError: If experiment or run is not found.
     """
     abs_mlflow_data = os.path.abspath(artifacts_data_path)
-    mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
 
-    set_or_create_experiment(experiment_name, verbose=verbose)
+    if databricks:
+        mlflow.set_tracking_uri("databricks")
+        mlflow.set_registry_uri("databricks-uc")
+    else:
+        mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
+
+    set_or_create_experiment(experiment_name, verbose=verbose, databricks=databricks)
 
     # Get the run_id using the helper function
-    run_id = get_run_id_by_name(experiment_name, run_name, verbose=verbose)
+    run_id = get_run_id_by_name(
+        experiment_name,
+        run_name,
+        verbose=verbose,
+        databricks=databricks,
+    )
 
     # Download the artifact from the run's artifact directory
     client = MlflowClient()
@@ -1602,6 +1642,7 @@ def mlflow_log_parameters_model(
     experiment_name: str = None,
     model_name: str = None,
     model=None,
+    databricks=False,
     hyperparam_dict=None,
 ):
     """
@@ -1622,11 +1663,16 @@ def mlflow_log_parameters_model(
     """
 
     abs_mlflow_data = os.path.abspath(mlflow_models_data)
-    mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
+
+    if databricks:
+        mlflow.set_tracking_uri("databricks")
+        mlflow.set_registry_uri("databricks-uc")
+    else:
+        mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
 
     # Set or create the experiment_id for the model and parameters
-    experiment_id = set_or_create_experiment(experiment_name)
-    run_id = get_run_id_by_name(experiment_name, run_name)
+    experiment_id = set_or_create_experiment(experiment_name, databricks=databricks)
+    run_id = get_run_id_by_name(experiment_name, run_name, databricks=databricks)
 
     print(f"Experiment_ID for model {model_type} and parameters: {experiment_id}")
 
@@ -1665,6 +1711,7 @@ def mlflow_load_model(
     experiment_name,
     run_name,
     model_name,
+    databricks=False,
     mlruns_location: str = None,
 ):
     """
@@ -1685,12 +1732,22 @@ def mlflow_load_model(
         abs_mlflow_data = os.path.abspath(mlflow_models_data)
     else:
         abs_mlflow_data = os.path.abspath(mlruns_location)
-    mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
+
+    if databricks:
+        mlflow.set_tracking_uri("databricks")
+        mlflow.set_registry_uri("databricks-uc")
+    else:
+        mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
 
     # Query MLflow to find the latest run_id for the given run_name in the
     # experiment (for models)
     client = MlflowClient()
-    experiment = mlflow.get_experiment_by_name(experiment_name)
+    if databricks:
+        experiment = mlflow.get_experiment_by_name(
+            databricks_username + experiment_name
+        )
+    else:
+        experiment = mlflow.get_experiment_by_name(experiment_name)
     if not experiment:
         raise ValueError(f"Experiment {experiment_name} not found.")
 
@@ -1721,6 +1778,7 @@ def log_mlflow_metrics(
     experiment_name,
     run_name,
     metrics=None,
+    databricks=False,
     images={},
 ):
     """
@@ -1748,11 +1806,16 @@ def log_mlflow_metrics(
 
     # Set the tracking URI to the specified mlflow_data location
     abs_mlflow_data = os.path.abspath(mlflow_models_data)  # Use models path
-    mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
+
+    if databricks:
+        mlflow.set_tracking_uri("databricks")
+        mlflow.set_registry_uri("databricks-uc")
+    else:
+        mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
 
     # Set or create the experiment_id for the model and parameters
-    experiment_id = set_or_create_experiment(experiment_name)
-    run_id = get_run_id_by_name(experiment_name, run_name)
+    experiment_id = set_or_create_experiment(experiment_name, databricks=databricks)
+    run_id = get_run_id_by_name(experiment_name, run_name, databricks=databricks)
 
     # Iterate over the models and log their metrics and parameters
     with mlflow.start_run(experiment_id=experiment_id, run_id=run_id):
@@ -1775,6 +1838,7 @@ def find_best_model(
     experiment_name: str,
     metric_name: str,
     mode: str = "max",
+    databricks=False,
     mlruns_location: str = None,
 ) -> str:
     """
@@ -1793,9 +1857,19 @@ def find_best_model(
         abs_mlflow_data = os.path.abspath(mlflow_models_data)
     else:
         abs_mlflow_data = os.path.abspath(mlruns_location)
-    mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
 
-    experiment = mlflow.get_experiment_by_name(experiment_name)
+    if databricks:
+        mlflow.set_tracking_uri("databricks")
+        mlflow.set_registry_uri("databricks-uc")
+    else:
+        mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
+
+    if databricks:
+        experiment = mlflow.get_experiment_by_name(
+            databricks_username + experiment_name
+        )
+    else:
+        experiment = mlflow.get_experiment_by_name(experiment_name)
     if not experiment:
         raise ValueError(f"Experiment '{experiment_name}' does not exist.")
 
@@ -1826,3 +1900,42 @@ def find_best_model(
     # Extract estimator name
     estimator_name = run_name.split("_")[0]
     return run_name, estimator_name
+
+
+def return_best_model(outcome, metric, mlruns_location=None, databricks=False):
+
+    outcome = "ISDEATHDATElead1yr"
+    experiment_name = outcome + "_model"
+    if databricks:
+        run_name, estimator_name = find_best_model(
+            experiment_name,
+            metric,
+            databricks=databricks,
+        )
+    else:
+        run_name, estimator_name = find_best_model(
+            experiment_name,
+            metric,
+            mlruns_location=mlruns_location,
+            databricks=databricks,
+        )
+
+    model_name = f"{estimator_name}_{outcome}"
+
+    if databricks:
+        best_model = mlflow_load_model(
+            experiment_name=experiment_name,
+            run_name=run_name,
+            model_name=model_name,
+            databricks=databricks,
+        )
+    else:
+        best_model = mlflow_load_model(
+            experiment_name,
+            run_name,
+            model_name,
+            mlruns_location=mlruns_location,
+            databricks=databricks,
+        )
+
+    return best_model
