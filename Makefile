@@ -14,8 +14,7 @@ PROJECT_DIRECTORY = adult_income
 
 # Define variables for looping
 OUTCOMES = income
-# PIPELINES = orig smote under orig_rfe smote_rfe under_rfe
-PIPELINES = orig under
+PIPELINES = orig smote under orig_rfe smote_rfe under_rfe
 SCORING = average_precision
 PRETRAINED ?= 0  # 0 if you want to train the models, 1 if calibrate pretrained
 
