@@ -94,6 +94,10 @@ check_vars:
 create_conda_env:
 	@echo "Run 'conda create -n $(CONDA_ENV_NAME) python=$(PYTHON_VERSION)' to create conda environment"
 
+## Activate the conda environment
+activate_conda_env:
+	@echo "Run 'conda activate $(CONDA_ENV_NAME)' to activate the conda environment"
+	
 # Target to create a virtual environment
 create_venv:
 	# Create the virtual environment using the specified Python version
