@@ -67,7 +67,7 @@ This repository provides a reusable, cookie-cutter-style template for developing
 pip install -r requirements.txt
 ```
 
-### ⚠️ Important Setup Instructions
+### Important Setup Instructions
 To use this cookie-cutter template with editable modules:
 
   Ensure you have a `setup.py` in the root directory of the project. Example:
