@@ -47,52 +47,27 @@ from adult_income.constants import (
 ################################################################################
 
 
-def clean_dataframe(df, cols_with_thousand_separators):
+def clean_dataframe(df, cols_with_thousand_separators=None):
     """
-    Cleans a pandas DataFrame by replacing specific values with NaN, removing
-    thousand separators, and converting columns to numeric types where possible.
+    Cleans a pandas DataFrame by replacing specific values with NaN, optionally
+    removing thousand separators, and converting columns to numeric types.
 
-    Parameters:
+    Parameters
     ----------
     df : pandas.DataFrame
         The DataFrame to be cleaned.
 
-    cols_with_thousand_separators : list of str
+    cols_with_thousand_separators : list of str, optional
         A list of column names that contain thousand separators and need to be
-        processed.
+        processed. If None, this step is skipped.
 
-    Returns:
+    Returns
     -------
     pandas.DataFrame
-        The cleaned DataFrame with NaNs in place of specified values, thousand
-        separators removed from specified columns, and columns converted to
-        numeric types where applicable.
-
-    Steps:
-    -----
-    1. Replace None and blank values with NaN using tqdm for progress tracking.
-       The following replacements are made:
-       - None to NaN
-       - Blank strings ("") to NaN
-       - Sequences of two or more hyphens ("--") to NaN
-       - Sequences of two or more dots ("..") to NaN
-
-    2. Remove thousand separators and convert to numeric for specified columns.
-       - If the column is of object type, remove thousand separators (commas).
-       - Convert the cleaned columns to numeric types, coercing errors to NaN.
-
-    3. Convert all other columns to numeric types where possible.
-       - Columns that are not listed in `cols_with_thousand_separators` are
-         attempted to be converted to numeric types.
-       - Errors during conversion are ignored, keeping the original non-numeric
-         values.
-
-    Notes:
-    -----
-    - Uses tqdm for progress tracking during the cleaning process.
+        The cleaned DataFrame.
     """
 
-    # Step 1: Replace None and blank values with NaN using tqdm for progress tracking
+    # Step 1: Replace None and blank values with NaN
     replacements = {
         None: np.nan,
         "": np.nan,
@@ -107,21 +82,26 @@ def clean_dataframe(df, cols_with_thousand_separators):
             else:
                 df[col] = df[col].replace(to_replace, value, regex=True)
 
-    # Step 2: Remove thousand separators and convert to numeric
-    desc_text = "Processing columns with thousand separators"
-    for col in tqdm(cols_with_thousand_separators, desc=desc_text):
-        if col in df.columns:
-
-            # Remove thousand separators only if the column is of object type
-            if df[col].dtype == "object":
-                df[col] = df[col].str.replace(",", "", regex=False)
-            # Convert to numeric
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+    # Step 2: Remove thousand separators and convert to numeric if specified
+    if cols_with_thousand_separators:
+        desc_text = "Processing columns with thousand separators"
+        for col in tqdm(cols_with_thousand_separators, desc=desc_text):
+            if col in df.columns:
+                if df[col].dtype == "object":
+                    df[col] = df[col].str.replace(",", "", regex=False)
+                df[col] = pd.to_numeric(df[col], errors="coerce")
 
     # Step 3: Convert all other columns to numeric if possible
     for col in tqdm(df.columns, desc="Converting columns to numeric"):
-        if col not in cols_with_thousand_separators:
-            df[col] = pd.to_numeric(df[col], errors="ignore")
+        if (
+            not cols_with_thousand_separators
+            or col not in cols_with_thousand_separators
+        ):
+            try:
+                df[col] = pd.to_numeric(df[col])
+            except (ValueError, TypeError):
+                # If conversion fails, keep the column as is
+                pass
 
     return df
 
