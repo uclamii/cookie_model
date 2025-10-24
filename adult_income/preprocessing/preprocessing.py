@@ -30,10 +30,10 @@ app = typer.Typer()
 
 @app.command()
 def main(
-    input_data_file: str = "./data/raw/df.parquet",
-    output_data_file: str = "./data/processed/df_sans_zero_missing.parquet",
+    input_data_file: str = "../data/raw/df.parquet",
+    output_data_file: str = "../data/processed/df_sans_zero_missing.parquet",
     stage: str = "training",
-    data_path: str = "./data/processed",
+    data_path: str = "../data/processed",
 ):
     """
     Main script execution replacing sys.argv with typer.

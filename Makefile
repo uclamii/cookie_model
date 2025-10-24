@@ -169,6 +169,11 @@ create_folders:
 ####################### Preprocessing (+) Dataprep Pipeline ####################
 ################################################################################
 
+.PHONY: data_gen
+data_gen:
+	$(PYTHON_INTERPRETER) $(PROJECT_DIRECTORY)/preprocessing/data_gen.py \
+		--output-data-file ./data/raw/df.parquet
+
 .PHONY: data_prep_preprocessing_training
 data_prep_preprocessing_training:
 	$(PYTHON_INTERPRETER) $(PROJECT_DIRECTORY)/preprocessing/preprocessing.py \
@@ -185,7 +190,7 @@ feat_gen_training:
 	--data-path ./data/processed
 
 
-preproc_pipeline: data_prep_preprocessing_training feat_gen_training
+preproc_pipeline: data_gen data_prep_preprocessing_training feat_gen_training
 
 ################################################################################
 ################################# Training #####################################
@@ -314,6 +319,12 @@ eval_catboost:
 	done
 
 eval_all_models: eval_logistic_regression eval_random_forest eval_xgboost eval_catboost
+
+################################################################################
+################### Train and Evaluate All Models Pipeline #####################
+################################################################################
+
+train_eval_pipeline: train_all_models eval_all_models
 
 ################################################################################
 #################### Best Model Explainer and Explanations #####################
