@@ -1,5 +1,6 @@
 import pytest
 from unittest import mock
+from unittest.mock import ANY
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -37,11 +38,23 @@ def test_log_mlflow_metrics_with_data(mock_mlflow):
     metrics = pd.Series({"accuracy": 0.9, "loss": 0.1})
     images = {"plot.png": plt.figure()}
 
-    log_mlflow_metrics(experiment_name, run_name, metrics, images)
+    log_mlflow_metrics(
+        experiment_name=experiment_name,
+        run_name=run_name,
+        metrics=metrics,
+        images=images,
+    )
 
     mock_mlflow["set_tracking_uri"].assert_called_once()
-    mock_mlflow["set_or_create_experiment"].assert_called_once_with(experiment_name)
-    mock_mlflow["get_run_id_by_name"].assert_called_once_with(experiment_name, run_name)
+    mock_mlflow["set_or_create_experiment"].assert_called_once_with(
+        experiment_name,
+        databricks=ANY,
+    )
+    mock_mlflow["get_run_id_by_name"].assert_called_once_with(
+        experiment_name,
+        run_name,
+        databricks=ANY,
+    )
     mock_mlflow["start_run"].assert_called_once_with(experiment_id="1234", run_id=None)
     mock_mlflow["log_metric"].assert_any_call("accuracy", 0.9)
     mock_mlflow["log_metric"].assert_any_call("loss", 0.1)
@@ -57,10 +70,22 @@ def test_log_mlflow_metrics_no_metrics(mock_mlflow):
     metrics = None
     images = {"chart.png": plt.figure()}
 
-    log_mlflow_metrics(experiment_name, run_name, metrics, images)
+    log_mlflow_metrics(
+        experiment_name=experiment_name,
+        run_name=run_name,
+        metrics=metrics,
+        images=images,
+    )
 
-    mock_mlflow["set_or_create_experiment"].assert_called_once_with(experiment_name)
-    mock_mlflow["get_run_id_by_name"].assert_called_once_with(experiment_name, run_name)
+    mock_mlflow["set_or_create_experiment"].assert_called_once_with(
+        experiment_name,
+        databricks=ANY,
+    )
+    mock_mlflow["get_run_id_by_name"].assert_called_once_with(
+        experiment_name,
+        run_name,
+        databricks=ANY,
+    )
     mock_mlflow["start_run"].assert_called_once_with(
         experiment_id="5678", run_id="run123"
     )
@@ -77,10 +102,22 @@ def test_log_mlflow_metrics_empty(mock_mlflow):
     metrics = pd.Series()
     images = {}
 
-    log_mlflow_metrics(experiment_name, run_name, metrics, images)
+    log_mlflow_metrics(
+        experiment_name=experiment_name,
+        run_name=run_name,
+        metrics=metrics,
+        images=images,
+    )
 
-    mock_mlflow["set_or_create_experiment"].assert_called_once_with(experiment_name)
-    mock_mlflow["get_run_id_by_name"].assert_called_once_with(experiment_name, run_name)
+    mock_mlflow["set_or_create_experiment"].assert_called_once_with(
+        experiment_name,
+        databricks=ANY,
+    )
+    mock_mlflow["get_run_id_by_name"].assert_called_once_with(
+        experiment_name,
+        run_name,
+        databricks=ANY,
+    )
     mock_mlflow["start_run"].assert_called_once_with(experiment_id="7890", run_id=None)
     mock_mlflow["log_metric"].assert_not_called()
     mock_mlflow["log_figure"].assert_not_called()

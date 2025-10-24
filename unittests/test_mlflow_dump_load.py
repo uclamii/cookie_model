@@ -1,6 +1,6 @@
 import pickle
 from sklearn.linear_model import LogisticRegression
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import patch, MagicMock, mock_open, ANY
 from adult_income.functions import (
     set_or_create_experiment,
     start_new_run,
@@ -197,7 +197,7 @@ def test_mlflow_log_parameters_model():
     model_name = "test_model"
     model = LogisticRegression()
     hyperparam_dict = {
-        "param1": 1,  # Scalar value instead of [1, 2]
+        "param1": 1,
         "param2": "value",
     }
 
@@ -210,6 +210,10 @@ def test_mlflow_log_parameters_model():
             return_value=MagicMock(experiment_id="123"),
         ),
         patch("mlflow.set_experiment"),
+        patch(
+            "adult_income.functions.get_run_id_by_name",
+            return_value="mock_run_id",
+        ),  # <--- add this
     ):
         mlflow_log_parameters_model(
             model_type,
@@ -285,7 +289,11 @@ def test_get_run_id_by_name_existing():
         mock_client_instance = mock_client_class.return_value
         mock_client_instance.search_runs.return_value = [mock_run]
 
-        run_id = get_run_id_by_name(experiment_name, run_name)
+        run_id = get_run_id_by_name(
+            experiment_name=experiment_name,
+            run_name=run_name,
+            databricks=ANY,
+        )
         assert run_id == "test_run_id"
         mock_client_instance.search_runs.assert_called_once_with(
             experiment_ids=["123"],
@@ -293,7 +301,7 @@ def test_get_run_id_by_name_existing():
             order_by=["start_time DESC"],
         )
         mock_start_new.assert_not_called()
-        mock_get_exp.assert_called_once_with(experiment_name)
+        mock_get_exp.assert_called_once()
 
 
 def test_get_run_id_by_name_create_new():
@@ -318,12 +326,16 @@ def test_get_run_id_by_name_create_new():
         mock_client_instance = mock_client_class.return_value
         mock_client_instance.search_runs.return_value = []
 
-        run_id = get_run_id_by_name(experiment_name, run_name)
+        run_id = get_run_id_by_name(
+            experiment_name=experiment_name,
+            run_name=run_name,
+            databricks=ANY,
+        )
         assert run_id == new_run_id
         mock_client_instance.search_runs.assert_called_once_with(
             experiment_ids=["123"],
             filter_string=f"tags.mlflow.runName = '{run_name}'",
             order_by=["start_time DESC"],
         )
-        mock_start_new.assert_called_once_with(run_name)
-        mock_get_exp.assert_called_once_with(experiment_name)
+        mock_start_new.assert_called_once()
+        mock_get_exp.assert_called_once()

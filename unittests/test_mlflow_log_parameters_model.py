@@ -2,6 +2,10 @@ from unittest.mock import patch, MagicMock
 from adult_income.functions import mlflow_log_parameters_model
 
 
+from unittest.mock import patch, MagicMock
+from adult_income.functions import mlflow_log_parameters_model
+
+
 def test_mlflow_log_parameters_model():
     experiment_name = "test_experiment"
     run_name = "test_run"
@@ -24,6 +28,7 @@ def test_mlflow_log_parameters_model():
             return_value=MagicMock(experiment_id="123"),
         ),
         patch("mlflow.set_experiment"),
+        patch("adult_income.functions.get_run_id_by_name", return_value="test_run_id"),
     ):
         mlflow_log_parameters_model(
             model_type,
@@ -33,6 +38,6 @@ def test_mlflow_log_parameters_model():
             run_name,
             experiment_name,
             model_name,
-            None,  # Pass `None` instead of the model
+            None,  # Pass None instead of the model
             hyperparam_dict,
         )
