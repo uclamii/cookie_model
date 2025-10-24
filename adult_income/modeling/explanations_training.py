@@ -49,9 +49,9 @@ def main(
     ################################################################################
 
     run_name, estimator_name = find_best_model(
-        experiment_name,
-        metric_name,
-        mode,
+        experiment_name=experiment_name,
+        metric_name=metric_name,
+        mode=mode,
     )
 
     model_name = f"{estimator_name}_{outcome}"  # retrieve best model_name

@@ -14,6 +14,7 @@ import os
 from adult_income.constants import mlflow_models_data
 from adult_income.config import PROCESSED_DATA_DIR_INFER
 from adult_income.functions import mlflow_load_model
+from adult_income.constants import databricks_username
 
 app = typer.Typer()
 
@@ -26,27 +27,37 @@ app = typer.Typer()
 def find_best_model(
     experiment_name: str,
     metric_name: str,
+    databricks=False,
     mode: str = "max",
     mlruns_location: str = None,
 ) -> str:
     """
-    Finds the best model from a given MLflow experiment based on a specified
-    metric.
+    Finds the best model from an MLflow experiment based on a specified metric.
 
-    :param experiment_name: The name of the MLflow experiment to search in.
-    :param metric_name: The metric used to determine the best model.
-    :param mode: Specify "max" to select model based on maximum metric value
-                 or "min" for minimum. Default is "max".
-    :return: The run ID of the best model.
-    :raises ValueError: If the experiment does not exist.
+    :param experiment_name: Name of the MLflow experiment to search in.
+    :param metric_name: Metric used to determine the best model.
+    :param databricks: If True, connects to Databricks MLflow using the
+                       Databricks tracking and registry URIs.
+                       The experiment name is prefixed with the Databricks username.
+    :param mode: Specify "max" to select the highest metric value or "min" for
+                 the lowest. Default is "max".
+    :return: Tuple of (run_name, estimator_name) for the best model.
+    :raises ValueError: If the experiment does not exist or has no runs.
     """
     # Get experiment by name
     if mlruns_location is None:
         abs_mlflow_data = os.path.abspath(mlflow_models_data)
 
-    mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
+    if databricks:
+        mlflow.set_tracking_uri("databricks")
+        mlflow.set_registry_uri("databricks-uc")
+        experiment = mlflow.get_experiment_by_name(
+            databricks_username + experiment_name
+        )
+    else:
+        mlflow.set_tracking_uri(f"file://{abs_mlflow_data}")
+        experiment = mlflow.get_experiment_by_name(experiment_name)
 
-    experiment = mlflow.get_experiment_by_name(experiment_name)
     if not experiment:
         raise ValueError(f"Experiment '{experiment_name}' does not exist.")
 
@@ -87,6 +98,7 @@ def main(
     outcome: str = "outcome",
     metric_name: str = "valid AUC ROC",  # Metric to select the best model
     mode: str = "max",  # max for metrics where higher is better, min otherwise
+    databricks: bool = False,
     # -----------------------------------------
 ):
 
@@ -110,9 +122,10 @@ def main(
 
     # Retrieve the best model's run name and estimator name
     run_name, estimator_name = find_best_model(
-        experiment_name,
-        metric_name,
-        mode,
+        experiment_name=experiment_name,
+        metric_name=metric_name,
+        mode=mode,
+        databricks=databricks,
     )
 
     # Retrieve model name to use in loading best model

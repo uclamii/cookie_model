@@ -301,7 +301,7 @@ def main(
         mlflow_dumpArtifact(
             experiment_name=exp_artifact_name,
             run_name=preproc_run_name,
-            obj_name=perc_below_indiv,
+            obj_name="perc_below_indiv",
             obj=perc_below_indiv,
         )
 
@@ -315,7 +315,7 @@ def main(
         perc_below_indiv = mlflow_loadArtifact(
             experiment_name=exp_artifact_name,
             run_name=preproc_run_name,
-            obj_name=perc_below_indiv,
+            obj_name="perc_below_indiv",
         )
 
     # Create a new DataFrame including only columns where less than 60% of the
