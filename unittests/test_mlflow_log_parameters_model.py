@@ -2,10 +2,6 @@ from unittest.mock import patch, MagicMock
 from adult_income.functions import mlflow_log_parameters_model
 
 
-from unittest.mock import patch, MagicMock
-from adult_income.functions import mlflow_log_parameters_model
-
-
 def test_mlflow_log_parameters_model():
     experiment_name = "test_experiment"
     run_name = "test_run"
