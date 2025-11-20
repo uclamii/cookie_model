@@ -59,9 +59,13 @@ def main(
         df_object = df.select_dtypes("object")
         print()
         print(
-            "The following columns have strings and should be removed from "
-            "modeling: \n \n"
-            f"{df_object.columns.to_list()}. \n There are {df_object.shape[1]} of them."
+            "The following columns have strings and may need to be removed from "
+            "modeling and/or otherwise transformed with `categorical_transformer` "
+            f"\nas handled accordingly in the `config.py` file. This list is stored "
+            f"as an artifact in MLflow for future reference if necessary for "
+            f"retrieval at a later time. \n \n"
+            f"There are {df_object.shape[1]} string columns:\n \n"
+            f"{df_object.columns.to_list()}. \n "
         )
 
         ########################################################################
