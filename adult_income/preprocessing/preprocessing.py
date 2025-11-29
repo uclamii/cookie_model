@@ -30,10 +30,10 @@ app = typer.Typer()
 
 @app.command()
 def main(
-    input_data_file: str = "../data/raw/df.parquet",
-    output_data_file: str = "../data/processed/df_sans_zero_missing.parquet",
+    input_data_file: str = "./data/raw/df.parquet",
+    output_data_file: str = "./data/processed/df_sans_zero_missing.parquet",
     stage: str = "training",
-    data_path: str = "../data/processed",
+    data_path: str = "./data/processed",
 ):
     """
     Main script execution replacing sys.argv with typer.
@@ -299,7 +299,7 @@ def main(
         # Dump the perc_below_indiv into a pickle file
         dumpObjects(
             perc_below_indiv,
-            os.path.join(data_path, f"{perc_below_indiv}.pkl"),
+            os.path.join(data_path, "perc_below_indiv.pkl"),
         )
 
         mlflow_dumpArtifact(
