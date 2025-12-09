@@ -55,7 +55,7 @@ def main(
     df = pd.read_parquet(input_data_file)
 
     try:
-        df.set_index(var_index)
+        df.set_index(var_index, inplace=True)
     except:
         print("Index already set or 'var_index' doesn't exist in dataframe")
     print("-" * 80)

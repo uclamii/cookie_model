@@ -13,6 +13,7 @@ import os
 import typer
 import pandas as pd
 from ucimlrepo import fetch_ucirepo
+from eda_toolkit import add_ids
 
 app = typer.Typer(add_completion=False)
 
@@ -37,6 +38,14 @@ def main(
 
     dataset = fetch_ucirepo(id=2)  ## Fetch dataset
     df = dataset.data.features.join(dataset.data.targets, how="inner")
+
+    df = add_ids(
+        df=df,
+        id_colname="census_id",
+        num_digits=9,
+        seed=111,
+        set_as_index=True,
+    )
 
     ## Ensure the output directory exists
     os.makedirs(os.path.dirname(output_data_file), exist_ok=True)
