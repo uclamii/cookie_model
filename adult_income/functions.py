@@ -1397,6 +1397,7 @@ def mlflow_dumpArtifact(
     artifact_run_id=None,
     databricks=False,
     artifacts_data_path=mlflow_artifacts_data,
+    artifact_format="pkl",
 ):
     """
     Log an object as an MLflow artifact with a persistent run ID.
@@ -1410,6 +1411,7 @@ def mlflow_dumpArtifact(
         artifact_run_id: Specific run ID to use (optional).
         artifacts_data_path: Path to MLflow artifacts directory
         (default: mlflow_artifacts_data from constants).
+        artifact_format: Format to save the artifact ('pkl' or 'csv').
 
     Returns:
         None
@@ -1447,13 +1449,34 @@ def mlflow_dumpArtifact(
         mlflow_dumpArtifact.artifacts_run_id = run_id
 
     with mlflow.start_run(run_id=run_id, nested=True):
-        temp_file = f"{obj_name}.pkl"
-        with open(temp_file, "wb") as f:
-            pickle.dump(obj, f)
+        if artifact_format == "csv":
+            temp_file = f"{obj_name}.csv"
+
+            if hasattr(obj, "to_csv"):
+                # pandas DataFrame
+                obj.to_csv(temp_file, index=False)
+            elif isinstance(obj, str):
+                # already a CSV string
+                with open(temp_file, "w") as f:
+                    f.write(obj)
+            else:
+                raise TypeError(
+                    "artifact_format='csv' requires a DataFrame or CSV string"
+                )
+
+        else:
+            # default: pickle
+            temp_file = f"{obj_name}.pkl"
+            with open(temp_file, "wb") as f:
+                pickle.dump(obj, f)
+
         mlflow.log_artifact(temp_file)
         os.remove(temp_file)
 
-    print(f"Artifact {obj_name} logged successfully in MLflow under Run_ID: {run_id}.")
+    print(
+        f"Artifact {obj_name}.{artifact_format} logged successfully in MLflow "
+        f"under Run_ID: {run_id}."
+    )
     return None
 
 
