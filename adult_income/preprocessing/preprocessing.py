@@ -336,10 +336,10 @@ def main(
     # Once high-missing-value columns are removed, additional filtering is
     # applied at the row level. The goal is to remove rows that:
 
-    # 1. Have zero recorded values for a critical feature (e.g., martial-status).
+    # 1. Have zero recorded values for a critical feature (e.g., capital-gain).
     # 2. Have a high percentage of missing values across all columns.
 
-    # Rows where martial-status == 0 and a large proportion of other data
+    # Rows where capital-gain == 0 and a large proportion of other data
     # is missing (exceeding a predefined threshold miss_row_thresh) are removed.
 
     # This step ensures that rows with insufficient data for analysis are
