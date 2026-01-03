@@ -326,7 +326,7 @@ def main(
     # data is missing.
     df_sans_zero_missing = df_sans_zero.loc[:, perc_below_indiv]
 
-    print(f"Sans Zero Missing 60% Missing Data: {df_sans_zero_missing.shape}")
+    print(f"Sans Zero 60% Missing Data: {df_sans_zero_missing.shape}")
 
     ############################################################################
     # Step 11. Remove Missingness in Rows
