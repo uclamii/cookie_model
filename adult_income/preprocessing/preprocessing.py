@@ -49,10 +49,18 @@ def main(
 
     df = pd.read_parquet(input_data_file)
 
-    try:
-        df.set_index(var_index, inplace=True)
-    except:
-        print("Index already set or 'var_index' doesn't exist in dataframe")
+    # Set index if not already set
+    if df.index.name != var_index:
+        try:
+            df.set_index(var_index, inplace=True)
+            print(f"Index set to '{var_index}'.")
+        except KeyError:
+            print(
+                f"Warning: '{var_index}' not found in columns - "
+                "proceeding with default integer index."
+            )
+    else:
+        print(f"Index '{var_index}' already set - skipping.")
 
     if stage == "training":
 
