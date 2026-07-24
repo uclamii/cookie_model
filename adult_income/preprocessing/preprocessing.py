@@ -212,6 +212,10 @@ def main(
         # capture zero-variance cols in list
         zero_varlist_list = list(zero_var.index)
 
+        print("*" * 80)
+        print(f"Zero-variance columns: {zero_varlist_list}")
+        print("*" * 80)
+
         ########################################################################
         # Step 8. Save and Log Zero Variance Columns List
         ########################################################################
