@@ -146,6 +146,54 @@ def test_mlflow_dumpArtifact_with_artifact_run_id():
         )
 
 
+def test_mlflow_dumpArtifact_csv_format():
+    experiment_name = "test_experiment"
+    run_name = "test_run"
+    obj_name = "cost_capture_train"
+    csv_content = "a,b\n1,2\n3,4\n"
+
+    if hasattr(mlflow_dumpArtifact, "artifacts_run_id"):
+        del mlflow_dumpArtifact.artifacts_run_id
+
+    mock_run = MagicMock()
+    mock_run.info.run_id = "test_run_id"
+
+    with (
+        patch("mlflow.start_run", return_value=mock_run),
+        patch("mlflow.log_artifact") as mock_log_artifact,
+        patch("os.remove") as mock_remove,
+        patch("builtins.open", mock_open()) as mock_file,
+        patch(
+            "mlflow.get_experiment_by_name",
+            return_value=MagicMock(experiment_id="123"),
+        ),
+        patch("mlflow.set_experiment"),
+        patch("mlflow.set_tracking_uri"),
+        patch(
+            "adult_income.functions.get_run_id_by_name",
+            return_value="test_run_id",
+        ),
+    ):
+        mlflow_dumpArtifact(
+            experiment_name=experiment_name,
+            run_name=run_name,
+            obj_name=obj_name,
+            obj=csv_content,
+            artifact_format="csv",
+        )
+
+        # CSV file should be written, not pickle
+        mock_file.assert_called_once_with(f"{obj_name}.csv", "w")
+
+        handle = mock_file()
+        handle.write.assert_called_once_with(csv_content)
+
+        mock_log_artifact.assert_called_once_with(f"{obj_name}.csv")
+        mock_remove.assert_called_once_with(f"{obj_name}.csv")
+
+        assert mlflow_dumpArtifact.artifacts_run_id == "test_run_id"
+
+
 def test_mlflow_loadArtifact():
     experiment_name = "test_experiment"
     run_name = "test_run"
